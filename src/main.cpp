@@ -1,45 +1,40 @@
 #include <Arduino.h>
 #include <stdio.h>
 #include <string.h>
-#include "KeypadInput.h"
-#include "LCDOutput.h"
-
-void initializeKeypadLcd()
-{
-    initializeLCD();
-
-    static FILE lcdout;
-    static FILE kpdin;
-
-    fdev_setup_stream(&lcdout, lcd_putchar, NULL, _FDEV_SETUP_WRITE);
-    fdev_setup_stream(&kpdin, NULL, keypad_getchar, _FDEV_SETUP_READ);
-
-    stdout = &lcdout;
-    stdin = &kpdin;
-}
+#include "Globals.h"
+#include "Config.h"
+#include "Led.h"
+#include "BlinkingLed.h"
 
 void setup()
 {
-    initializeKeypadLcd();
-    printf("Enter Password: ");
+    void initializeUart();
+    pinMode(BUTTON_PIN, INPUT_PULLUP);
+    pinMode(LED_1_PIN, OUTPUT);
+    pinMode(LED_2_PIN, OUTPUT);
+    pinMode(BUTTON_INC_PIN, INPUT_PULLUP);
+    pinMode(BUTTON_DEC_PIN, INPUT_PULLUP);
+    unsigned long currentTime = millis();
+    lastTaskTime[0] = currentTime + TASK1_OFFSET;
+    lastTaskTime[1] = currentTime + TASK2_OFFSET;
+    lastTaskTime[2] = currentTime + TASK3_OFFSET;
+    digitalWrite(LED_1_PIN, led1State);
+    digitalWrite(LED_2_PIN, led2State);
 }
 
 void loop()
 {
-    char input[17];
-    scanf("%16s", input);
-
-    printf("\n");
-    if (strcmp(input, "007D") == 0)
+    unsigned long currentTime = millis();
+    if (currentTime - lastTaskTime[0] >= TASK1_RECURRENCE)
     {
-        printf("Access Granted");
+        run_led();
     }
-    else
+    if (currentTime - lastTaskTime[1] >= TASK2_RECURRENCE / counter)
     {
-        printf("Wrong Password");
+        run_blinking_led();
     }
-
-    delay(2000);
-    lcd.clear();
-    printf("Enter Password: ");
+    if (currentTime - lastTaskTime[2] >= TASK3_RECURRENCE)
+    {
+        run_blinking_led_buttons();
+    }
 }
